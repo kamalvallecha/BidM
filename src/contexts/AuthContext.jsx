@@ -1,9 +1,9 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import axios from 'axios';
+import axios from '../api/axios';
 
-export const AuthContext = createContext();
+export const AuthContext = createContext(null);
 
-export function AuthProvider({ children }) {
+export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [loading, setLoading] = useState(true);
@@ -22,24 +22,12 @@ export function AuthProvider({ children }) {
 
     const login = async (credentials) => {
         try {
-            console.log('Sending credentials:', credentials);
-            const response = await axios.post('http://localhost:5000/api/login', credentials);
-            
-            if (response.data.token) {
-                localStorage.setItem('token', response.data.token);
-                localStorage.setItem('user', JSON.stringify(response.data.user));
-                
-                setUser(response.data.user);
-                setIsAuthenticated(true);
-                
-                return response.data;
-            } else {
-                throw new Error('No token received from server');
-            }
+            const response = await axios.post('/api/login', credentials);
+            setUser(response.data);
+            return response.data;
         } catch (error) {
-            console.error('Login error details:', error.response?.data || error.message);
-            setIsAuthenticated(false);
-            throw error.response?.data?.error || error.message || 'Invalid credentials';
+            console.error('Login error:', error);
+            throw error;
         }
     };
 
@@ -64,6 +52,6 @@ export function AuthProvider({ children }) {
             {children}
         </AuthContext.Provider>
     );
-}
+};
 
 export const useAuth = () => useContext(AuthContext); 

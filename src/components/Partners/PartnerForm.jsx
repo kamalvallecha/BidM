@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Form, Input, Select, Button, Row, Col, message } from 'antd';
+import axios from '../../api/axios';
 
 const { Option } = Select;
 
@@ -45,29 +46,26 @@ const countries = [
     'Zambia', 'Zimbabwe'
 ];
 
-const PartnerForm = ({ onSubmit, onCancel }) => {
+const PartnerForm = ({ onSuccess, onCancel }) => {
     const [form] = Form.useForm();
+    const [loading, setLoading] = useState(false);
 
     const handleSubmit = async (values) => {
         try {
-            const response = await fetch('http://localhost:5000/api/partners', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(values)
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to create partner');
+            setLoading(true);
+            const response = await axios.post('/api/partners', values);
+            if (response.status === 200 || response.status === 201) {
+                message.success('Partner added successfully');
+                form.resetFields();
+                if (onSuccess) {
+                    onSuccess();
+                }
             }
-
-            const data = await response.json();
-            message.success('Partner created successfully');
-            onSubmit(data);
         } catch (error) {
             console.error('Error creating partner:', error);
-            message.error('Failed to create partner');
+            message.error('Failed to add partner: ' + (error.response?.data?.error || error.message));
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -187,7 +185,7 @@ const PartnerForm = ({ onSubmit, onCancel }) => {
                 <Button onClick={onCancel} style={{ marginRight: 8 }}>
                     Cancel
                 </Button>
-                <Button type="primary" htmlType="submit">
+                <Button type="primary" htmlType="submit" loading={loading}>
                     Add Partner
                 </Button>
             </Row>

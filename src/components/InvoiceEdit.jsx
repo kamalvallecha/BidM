@@ -143,11 +143,10 @@ const InvoiceEdit = () => {
       setLois(uniqueLois);
       setAudienceIds(uniqueAudiences);
 
-      // Store invoice details for each partner
+      // Store invoice details for each partner-LOI combination
       const partnerDetails = {};
       Object.entries(data.partner_data).forEach(([key, value]) => {
-        const [partner, loi] = key.split('_');
-        partnerDetails[partner] = {
+        partnerDetails[key] = {
           poNumber: data.po_number || '',
           invoiceDate: value.invoice_date || '',
           invoiceSent: value.invoice_sent || '',
@@ -158,9 +157,18 @@ const InvoiceEdit = () => {
       });
       setPartnerInvoiceDetails(partnerDetails);
 
-      // Set initial form data for first partner
-      if (uniquePartners.length > 0) {
-        setFormData(partnerDetails[uniquePartners[0]]);
+      // Set initial form data for first partner and LOI
+      if (uniquePartners.length > 0 && uniqueLois.length > 0) {
+        const initialKey = `${uniquePartners[0]}_${uniqueLois[0]}`;
+        const initialDetails = partnerDetails[initialKey] || {
+          poNumber: data.po_number || '',
+          invoiceDate: '',
+          invoiceSent: '',
+          invoiceSerial: '',
+          invoiceNumber: '',
+          invoiceAmount: '0.00'
+        };
+        setFormData(initialDetails);
         setActiveVendor(0);
         setActiveLOI(uniqueLois[0]);
       }
@@ -293,10 +301,29 @@ const InvoiceEdit = () => {
   };
 
   const handleInputChange = (field) => (event) => {
+    const newValue = event.target.value;
+    const currentPartner = partners[activeVendor];
+    
+    // Update form data for current view
     setFormData(prev => ({
       ...prev,
-      [field]: event.target.value
+      [field]: newValue
     }));
+
+    // Sync the same field across all LOIs for the current partner
+    setPartnerInvoiceDetails(prev => {
+      const updatedDetails = { ...prev };
+      // Update all LOIs for the current partner
+      lois.forEach(loi => {
+        const key = `${currentPartner}_${loi}`;
+        updatedDetails[key] = {
+          ...(updatedDetails[key] || {}),
+          poNumber: formData.poNumber, // Keep existing PO number
+          [field]: newValue // Update only the changed field
+        };
+      });
+      return updatedDetails;
+    });
   };
 
   const handleFinalCPIChange = (item) => (event) => {
@@ -339,67 +366,95 @@ const InvoiceEdit = () => {
     const currentPartner = partners[activeVendor];
     const newPartner = partners[newValue];
 
-    // Save current form data for current partner
+    // Save current form data across all LOIs for current partner
     if (currentPartner) {
-      setPartnerInvoiceDetails(prev => ({
-        ...prev,
-        [currentPartner]: formData
-      }));
+      const updatedDetails = { ...partnerInvoiceDetails };
+      lois.forEach(loi => {
+        const key = `${currentPartner}_${loi}`;
+        updatedDetails[key] = {
+          ...formData
+        };
+      });
+      setPartnerInvoiceDetails(updatedDetails);
     }
 
-    // Load form data for new partner
+    // Load form data for new partner (use data from first LOI if exists)
     if (newPartner) {
-      setFormData(partnerInvoiceDetails[newPartner] || {
+      const firstLOIKey = `${newPartner}_${lois[0]}`;
+      const partnerDetails = partnerInvoiceDetails[firstLOIKey] || {
         poNumber: formData.poNumber, // Keep PO number as it's bid-specific
         invoiceDate: '',
+        invoiceSent: '',
         invoiceSerial: '',
         invoiceNumber: '',
-        invoiceSent: '',
         invoiceAmount: '0.00'
-      });
+      };
+      setFormData(partnerDetails);
     }
 
     setActiveVendor(newValue);
+  };
+
+  const handleLOIChange = (newLOI) => {
+    const currentPartner = partners[activeVendor];
+    
+    // When changing LOI, just load the same data as current partner's first LOI
+    const firstLOIKey = `${currentPartner}_${lois[0]}`;
+    const partnerDetails = partnerInvoiceDetails[firstLOIKey] || {
+      poNumber: formData.poNumber,
+      invoiceDate: formData.invoiceDate,
+      invoiceSent: formData.invoiceSent,
+      invoiceSerial: formData.invoiceSerial,
+      invoiceNumber: formData.invoiceNumber,
+      invoiceAmount: formData.invoiceAmount
+    };
+    
+    setFormData(partnerDetails);
+    setActiveLOI(newLOI);
   };
 
   const handleSave = async () => {
     try {
       const currentPartner = partners[activeVendor];
       
-      const dataToSave = {
-        bid_id: bidId,
-        partner_name: currentPartner,
-        loi: parseInt(activeLOI),
-        invoice_data: {
-          invoice_date: formData.invoiceDate,
-          invoice_sent: formData.invoiceSent,
-          invoice_serial: formData.invoiceSerial,
-          invoice_number: formData.invoiceNumber,
-          invoice_amount: formData.invoiceAmount
-        },
-        deliverables: invoiceData.deliverables
-          .filter(item => item.nDelivered > 0)  // Only save rows with deliveries
-          .map(item => ({
-            audience_id: item.audience_id,
-            country: item.country,
-            final_cpi: parseFloat(item.finalCPI),
-            final_cost: parseFloat(item.finalCost)
-          }))
-      };
+      // Save the same invoice data for all LOIs of the current partner
+      const savePromises = lois.map(async (loi) => {
+        const dataToSave = {
+          bid_id: bidId,
+          partner_name: currentPartner,
+          loi: parseInt(loi),
+          invoice_data: {
+            invoice_date: formData.invoiceDate,
+            invoice_sent: formData.invoiceSent,
+            invoice_serial: formData.invoiceSerial,
+            invoice_number: formData.invoiceNumber,
+            invoice_amount: formData.invoiceAmount
+          },
+          deliverables: invoiceData.deliverables
+            .filter(item => item.nDelivered > 0)
+            .map(item => ({
+              audience_id: item.audience_id,
+              country: item.country,
+              final_cpi: parseFloat(item.finalCPI),
+              final_cost: parseFloat(item.finalCost)
+            }))
+        };
 
-      const response = await fetch(`http://localhost:5000/api/invoice/${bidId}/save`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(dataToSave)
+        const response = await fetch(`http://localhost:5000/api/invoice/${bidId}/save`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(dataToSave)
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to save data for LOI ${loi}`);
+        }
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to save data');
-      }
-
-      alert('Data saved successfully!');
+      await Promise.all(savePromises);
+      alert('Data saved successfully for all LOIs!');
     } catch (error) {
       console.error('Error saving data:', error);
       alert('Failed to save data');
@@ -526,7 +581,7 @@ const InvoiceEdit = () => {
             <LOIButton 
               key={loi}
               variant={activeLOI === loi ? 'contained' : 'outlined'}
-              onClick={() => setActiveLOI(loi)}
+              onClick={() => handleLOIChange(loi)}
               isActive={activeLOI === loi}
             >
               {loi} min

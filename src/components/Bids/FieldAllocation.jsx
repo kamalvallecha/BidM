@@ -20,7 +20,7 @@ import {
   Button,
   Stack
 } from '@mui/material';
-import axios from 'axios';
+import axios from '../../api/axios';
 import './Bids.css';
 
 function FieldAllocation() {
@@ -43,7 +43,7 @@ function FieldAllocation() {
     try {
       setLoading(true);
       console.log('Fetching data for bid:', bidId);
-      const response = await axios.get(`http://localhost:5000/api/bids/${bidId}/field-data`);
+      const response = await axios.get(`/api/bids/${bidId}/field-data`);
       console.log('Raw response:', response.data);
 
       // Validate data
@@ -104,7 +104,7 @@ function FieldAllocation() {
     try {
       // Submit all allocation changes
       const promises = Object.values(tempAllocations).map(allocation =>
-        axios.post(`http://localhost:5000/api/bids/${bidId}/field-allocations`, allocation)
+        axios.post(`/api/bids/${bidId}/field-allocations`, allocation)
       );
 
       await Promise.all(promises);

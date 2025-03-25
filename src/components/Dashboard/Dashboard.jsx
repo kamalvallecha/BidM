@@ -3,6 +3,7 @@ import { Card, Row, Col, message, Spin } from 'antd';
 import { UserOutlined, CheckCircleOutlined, DollarOutlined, ClockCircleOutlined } from '@ant-design/icons';
 import { PieChart } from './PieChart';
 import './Dashboard.css';
+import axios from '../../api/axios';
 
 const Dashboard = () => {
     const [data, setData] = useState({
@@ -22,26 +23,14 @@ const Dashboard = () => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const fetchData = async () => {
+        const fetchDashboardData = async () => {
             try {
                 setLoading(true);
                 console.log('Fetching dashboard data...');
-                const response = await fetch('http://localhost:5000/api/dashboard', {
-                    method: 'GET',
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json'
-                    },
-                    credentials: 'same-origin'
-                });
+                const response = await axios.get('/api/dashboard');
                 
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                
-                const jsonData = await response.json();
-                console.log('Received dashboard data:', jsonData);
-                setData(jsonData);
+                console.log('Received dashboard data:', response.data);
+                setData(response.data);
             } catch (error) {
                 console.error('Error fetching dashboard data:', error);
                 message.error('Failed to load dashboard data');
@@ -50,7 +39,7 @@ const Dashboard = () => {
             }
         };
 
-        fetchData();
+        fetchDashboardData();
     }, []);
 
     if (loading) {

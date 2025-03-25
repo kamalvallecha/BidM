@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -19,7 +19,7 @@ import {
   Alert
 } from '@mui/material';
 import './Bids.css';
-import axios from 'axios';
+import axios from '../../api/axios';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { parseISO } from 'date-fns';
 
@@ -61,11 +61,23 @@ function ClosureEdit() {
             params: { partner: selectedPartner, loi: selectedLOI }
           });
           
-          setAudienceData(response.data);
+          // Filter out audiences where all countries have allocation = 0
+          const filteredAudienceData = response.data.filter(audience => {
+            // Check if at least one country has allocation > 0
+            return audience.countries.some(country => country.allocation > 0);
+          });
+
+          // For each audience, filter out countries with allocation = 0
+          const processedAudienceData = filteredAudienceData.map(audience => ({
+            ...audience,
+            countries: audience.countries.filter(country => country.allocation > 0)
+          }));
+          
+          setAudienceData(processedAudienceData);
           
           // Update formData with fetched values
           const newFormData = { ...formData };
-          response.data.forEach(audience => {
+          processedAudienceData.forEach(audience => {
             // Set field close date
             newFormData[`${audience.id}_${selectedPartner}_${selectedLOI}_field_close_date`] = audience.field_close_date;
             

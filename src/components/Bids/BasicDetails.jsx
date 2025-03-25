@@ -21,7 +21,7 @@ import {
   CircularProgress
 } from '@mui/material';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
-import axios from 'axios';
+import axios from '../../api/axios';
 import './Bids.css';
 import GlobeIcon from '@mui/icons-material/Public';  // Import globe icon
 
@@ -30,6 +30,10 @@ function BasicDetails() {
   const navigate = useNavigate();
   const { bidId } = useParams();
   const isEditMode = !!bidId;
+  
+  // Add debug log for edit mode
+  console.log('Current mode:', isEditMode ? 'Edit Mode' : 'Create Mode', 'bidId:', bidId);
+
   const [salesContacts, setSalesContacts] = useState([]);
   const [vmContacts, setVmContacts] = useState([]);
   const [clients, setClients] = useState([]);
@@ -156,11 +160,12 @@ function BasicDetails() {
     const loadInitialData = async () => {
       try {
         setLoading(true);
+        console.log('Starting loadInitialData, isEditMode:', isEditMode, 'bidId:', bidId);
 
         // Get next bid number first if it's a new bid
         if (!isEditMode) {
           try {
-            const bidNumberResponse = await axios.get('http://localhost:5000/api/bids/next-number');
+            const bidNumberResponse = await axios.get('/api/bids/next-number');
             setFormData({
               ...defaultFormData,
               bid_number: bidNumberResponse.data.next_bid_number
@@ -170,36 +175,61 @@ function BasicDetails() {
           }
         }
 
-        if (isEditMode) {
-          const response = await axios.get(`http://localhost:5000/api/bids/${bidId}`);
-          const bidData = response.data;
-          
-          setFormData({
-            ...bidData,
-            partners: Array.isArray(bidData.partners) ? bidData.partners : [],
-            loi: Array.isArray(bidData.loi) ? bidData.loi : [],
-            countries: Array.isArray(bidData.countries) ? bidData.countries : []
-          });
-          
-          setSelectedPartners(Array.isArray(bidData.partners) ? bidData.partners : []);
-          setSelectedLOIs(Array.isArray(bidData.loi) ? bidData.loi : []);
+        if (isEditMode && bidId) {
+          console.log('Fetching bid data for ID:', bidId);
+          try {
+            const response = await axios.get(`/api/bids/${bidId}`);
+            const bidData = response.data;
+            
+            console.log('Received bid data:', bidData);
+            console.log('Partners from API:', bidData.partners);
+            
+            // Convert partners and loi to arrays if they're not already
+            // Extract just the IDs from the partners array
+            const partnersArray = bidData.partners ? 
+              (Array.isArray(bidData.partners) ? bidData.partners.map(p => p.id || p) : [bidData.partners.id || bidData.partners]) : 
+              [];
+            const loiArray = bidData.loi ? (Array.isArray(bidData.loi) ? bidData.loi : [bidData.loi]) : [];
+            
+            console.log('Processed partners array:', partnersArray);
+            
+            setFormData(prevData => ({
+              ...prevData,
+              ...bidData,
+              partners: partnersArray,
+              loi: loiArray,
+              countries: Array.isArray(bidData.countries) ? bidData.countries : []
+            }));
+            
+            // Set selected partners and LOIs
+            setSelectedPartners(partnersArray);
+            setSelectedLOIs(loiArray);
+          } catch (error) {
+            console.error('Error fetching bid data:', error);
+          }
         }
 
-        const [salesRes, vmRes, clientsRes, partnersRes] = await Promise.all([
-          axios.get('http://localhost:5000/api/sales'),
-          axios.get('http://localhost:5000/api/vms'),
-          axios.get('http://localhost:5000/api/clients'),
-          axios.get('http://localhost:5000/api/partners')
-        ]);
+        // Load reference data
+        try {
+          const [salesRes, vmRes, clientsRes, partnersRes] = await Promise.all([
+            axios.get('/api/sales'),
+            axios.get('/api/vms'),
+            axios.get('/api/clients'),
+            axios.get('/api/partners')
+          ]);
 
-        setSalesContacts(salesRes.data);
-        setVmContacts(vmRes.data);
-        setClients(clientsRes.data);
-        setPartners(partnersRes.data);
+          console.log('Available partners from API:', partnersRes.data);
+
+          setSalesContacts(salesRes.data);
+          setVmContacts(vmRes.data);
+          setClients(clientsRes.data);
+          setPartners(partnersRes.data);
+        } catch (error) {
+          console.error('Error loading reference data:', error);
+        }
 
       } catch (error) {
-        console.error('Error loading data:', error);
-        alert('Failed to load data');
+        console.error('Error in loadInitialData:', error);
       } finally {
         setLoading(false);
       }
@@ -287,6 +317,8 @@ function BasicDetails() {
     const arrayValue = Array.isArray(value) ? value : [];
     
     if (type === 'partners') {
+      console.log('Setting partners to:', arrayValue);
+      // We're already getting IDs from the Select component
       setSelectedPartners(arrayValue);
       setFormData(prev => ({ ...prev, partners: arrayValue }));
     } else if (type === 'loi') {
@@ -417,10 +449,10 @@ function BasicDetails() {
         };
 
         if (isEditMode) {
-            await axios.put(`http://localhost:5000/api/bids/${bidId}`, updatedFormData);
+            await axios.put(`/api/bids/${bidId}`, updatedFormData);
             navigate(`/bids/partner/${bidId}`);
         } else {
-            const response = await axios.post('http://localhost:5000/api/bids', updatedFormData);
+            const response = await axios.post('/api/bids', updatedFormData);
             navigate(`/bids/partner/${response.data.bid_id}`);
         }
 
@@ -534,8 +566,15 @@ function BasicDetails() {
                 <InputLabel>Partners</InputLabel>
                 <Select
                   multiple
-                  value={selectedPartners}
+                  value={selectedPartners || []}
                   onChange={(e) => handlePartnerLOIChange('partners', e.target.value)}
+                  renderValue={(selected) => {
+                    // Find partner names for selected IDs
+                    const selectedNames = selected.map(id => 
+                      partners.find(p => p.id === id)?.partner_name
+                    ).filter(Boolean);
+                    return selectedNames.join(', ');
+                  }}
                 >
                   {partners.map(partner => (
                     <MenuItem key={partner.id} value={partner.id}>

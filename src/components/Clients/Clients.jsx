@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Table, Button, Modal, Input, Form, message } from 'antd';
+import axios from '../../api/axios';
 import './Clients.css';
 
 const Clients = () => {
@@ -14,9 +15,8 @@ const Clients = () => {
 
     const fetchClients = async () => {
         try {
-            const response = await fetch('http://localhost:5000/api/clients');
-            const data = await response.json();
-            setClients(data);
+            const response = await axios.get('/api/clients');
+            setClients(response.data);
         } catch (error) {
             console.error('Error fetching clients:', error);
             message.error('Failed to fetch clients');
@@ -25,19 +25,8 @@ const Clients = () => {
 
     const handleSubmit = async (values) => {
         try {
-            const response = await fetch('http://localhost:5000/api/clients', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(values)
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to create client');
-            }
-
-            await fetchClients();
+            await axios.post('/api/clients', values);
+            fetchClients();
             setIsModalVisible(false);
             form.resetFields();
             message.success('Client created successfully');
@@ -49,15 +38,8 @@ const Clients = () => {
 
     const handleDelete = async (id) => {
         try {
-            const response = await fetch(`http://localhost:5000/api/clients/${id}`, {
-                method: 'DELETE'
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to delete client');
-            }
-
-            await fetchClients();
+            await axios.delete(`/api/clients/${id}`);
+            fetchClients();
             message.success('Client deleted successfully');
         } catch (error) {
             console.error('Error deleting client:', error);

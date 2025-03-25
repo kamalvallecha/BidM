@@ -17,7 +17,7 @@ import {
 import EditIcon from '@mui/icons-material/Edit';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import KeyboardReturnIcon from '@mui/icons-material/KeyboardReturn';
-import axios from 'axios';
+import axios from '../../api/axios';
 import './Bids.css';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -38,7 +38,7 @@ function InField() {
     try {
       setLoading(true);
       setError(null);
-      const response = await axios.get('http://localhost:5000/api/bids/infield');
+      const response = await axios.get('/api/bids/infield');
       setBids(response.data);
       setLoading(false);
     } catch (error) {
@@ -55,7 +55,7 @@ function InField() {
   const handleMoveToClosure = async (bidNumber) => {
     try {
       console.log("Moving bid to closure:", bidNumber);
-      const moveResponse = await axios.post(`http://localhost:5000/api/bids/${bidNumber}/move-to-closure`);
+      const moveResponse = await axios.post(`/api/bids/${bidNumber}/move-to-closure`);
       if (moveResponse.data.message) {
         alert('Bid moved to closure successfully');
         fetchInFieldBids();

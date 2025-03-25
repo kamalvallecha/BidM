@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Table, Button, Modal, Input } from 'antd';
 import PartnerForm from './PartnerForm';
+import axios from '../../api/axios';
 
 const Partners = () => {
   const [partners, setPartners] = useState([]);
@@ -9,9 +10,8 @@ const Partners = () => {
 
   const fetchPartners = async () => {
     try {
-            const response = await fetch('http://localhost:5000/api/partners');
-            const data = await response.json();
-            setPartners(data);
+      const response = await axios.get('/api/partners');
+      setPartners(response.data);
     } catch (error) {
       console.error('Error fetching partners:', error);
     }

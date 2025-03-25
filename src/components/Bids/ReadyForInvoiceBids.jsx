@@ -12,10 +12,16 @@ import {
   Paper,
   IconButton,
   Stack,
-  Tooltip
+  Tooltip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import KeyboardReturnIcon from '@mui/icons-material/KeyboardReturn';
+import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
@@ -61,6 +67,27 @@ const ReadyForInvoiceBids = () => {
         alert('Bid not found. Please refresh the page and try again.');
       } else {
         alert('Error moving bid to closure. Please try again.');
+      }
+    }
+  };
+
+  const handleMoveToInfield = async (bidNumber, poNumber) => {
+    try {
+      console.log("Moving bid to infield:", bidNumber);
+      const moveResponse = await axios.post(`http://localhost:5000/api/bids/${bidNumber}/move-to-infield`, {
+        po_number: poNumber
+      });
+      
+      if (moveResponse.data.message) {
+        alert('Bid moved to infield successfully');
+        fetchBids();
+      }
+    } catch (error) {
+      console.error('Error moving bid to infield:', error);
+      if (error.response?.status === 404) {
+        alert('Bid not found. Please refresh the page and try again.');
+      } else {
+        alert('Error moving bid to infield. Please try again.');
       }
     }
   };
@@ -127,17 +154,24 @@ const ReadyForInvoiceBids = () => {
                         <EditIcon fontSize="small" />
                       </IconButton>
                     </Tooltip>
-                    {bid.status === 'ready_for_invoice' && (
-                      <Tooltip title="Move to Closure">
-                        <IconButton
-                          onClick={() => handleMoveToClosureClick(bid.bid_number)}
-                          color="secondary"
-                          size="small"
-                        >
-                          <KeyboardReturnIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                    )}
+                    <Tooltip title="Move to Closure">
+                      <IconButton
+                        onClick={() => handleMoveToClosureClick(bid.bid_number)}
+                        color="secondary"
+                        size="small"
+                      >
+                        <KeyboardReturnIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Move to Infield">
+                      <IconButton
+                        onClick={() => handleMoveToInfield(bid.bid_number, bid.po_number)}
+                        color="info"
+                        size="small"
+                      >
+                        <SwapHorizIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
                   </Stack>
                 </TableCell>
               </TableRow>

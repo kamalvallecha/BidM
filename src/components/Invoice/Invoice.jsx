@@ -13,7 +13,7 @@ import {
   Tooltip
 } from '@mui/material';
 import { Edit, ArrowBack, KeyboardReturn } from '@mui/icons-material';
-import axios from 'axios';
+import axios from '../../api/axios';
 import { useNavigate } from 'react-router-dom';
 
 function Invoice() {
@@ -27,7 +27,7 @@ function Invoice() {
 
   const fetchReadyForInvoiceBids = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/bids/ready-for-invoice');
+      const response = await axios.get('/api/bids/ready-for-invoice');
       setBids(response.data);
     } catch (error) {
       console.error('Error fetching bids:', error);
@@ -40,11 +40,8 @@ function Invoice() {
 
   const handleMoveToClosureClick = async (bidId) => {
     try {
-      const response = await axios.put(`http://localhost:5000/api/bids/${bidId}/move-to-closure`);
-      if (response.data.message) {
-        alert('Bid moved to closure successfully');
-        fetchReadyForInvoiceBids();
-      }
+      await axios.put(`/api/bids/${bidId}/move-to-closure`);
+      fetchReadyForInvoiceBids();
     } catch (error) {
       console.error('Error moving bid to closure:', error);
       alert('Error moving bid to closure. Please try again.');

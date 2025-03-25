@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { ConfigProvider, App as AntApp } from 'antd';
 import Login from './components/Login';
 import Layout from './components/Layout';
 import Users from './components/Users/Users';
@@ -31,120 +32,124 @@ const ProtectedRoute = ({ children }) => {
 
 function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <LocalizationProvider dateAdapter={AdapterDateFns}>
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route
-              path="/home"
-              element={
-                <ProtectedRoute>
-                  <Home />
-                </ProtectedRoute>
-              }
-            />
-            <Route path="/" element={<Navigate to="/home" />} />
-            
-            <Route element={
-              <PrivateRoute>
-                <Layout />
-              </PrivateRoute>
-            }>
-              <Route index element={<Home />} />
-              
-              <Route path="bids" element={
-                <PrivateRoute requiredPermissions={['can_view_bids']}>
-                  <BidList />
-                </PrivateRoute>
-              } />
-              <Route path="bids/new" element={
-                <PrivateRoute requiredPermissions={['can_view_bids', 'can_edit_bids']}>
-                  <BasicDetails />
-                </PrivateRoute>
-              } />
-              <Route path="bids/edit/:bidId" element={
-                <PrivateRoute requiredPermissions={['can_view_bids', 'can_edit_bids']}>
-                  <BasicDetails />
-                </PrivateRoute>
-              } />
-              <Route path="bids/partner/:bidId" element={
-                <PrivateRoute requiredPermissions={['can_view_bids']}>
-                  <PartnerResponse />
-                </PrivateRoute>
-              } />
-              <Route path="bids/field-allocation/:bidId" element={
-                <PrivateRoute requiredPermissions={['can_view_infield', 'can_edit_infield']}>
-                  <FieldAllocation />
-                </PrivateRoute>
-              } />
-              
-              <Route path="infield" element={
-                <PrivateRoute requiredPermissions={['can_view_infield']}>
-                  <InField />
-                </PrivateRoute>
-              } />
-              
-              <Route path="closure" element={
-                <PrivateRoute requiredPermissions={['can_view_closure']}>
-                  <Closure />
-                </PrivateRoute>
-              } />
-              <Route path="closure/edit/:bidId" element={
-                <PrivateRoute requiredPermissions={['can_view_closure', 'can_edit_closure']}>
-                  <ClosureEdit />
-                </PrivateRoute>
-              } />
-              
-              <Route path="invoice" element={
-                <PrivateRoute requiredPermissions={['can_view_invoice']}>
-                  <ReadyForInvoiceBids />
-                </PrivateRoute>
-              } />
-              <Route path="invoice/:bidId/edit" element={
-                <PrivateRoute requiredPermissions={['can_view_invoice']}>
-                  <InvoiceEdit />
-                </PrivateRoute>
-              } />
-              
-              <Route path="users" element={
-                <PrivateRoute requiredPermissions={['can_view_users']}>
-                  <Users />
-                </PrivateRoute>
-              } />
-              <Route path="partners" element={
-                <PrivateRoute requiredPermissions={['can_view_users']}>
-                  <Partners />
-                </PrivateRoute>
-              } />
-              <Route path="vms" element={
-                <PrivateRoute requiredPermissions={['can_view_users']}>
-                  <VMs />
-                </PrivateRoute>
-              } />
-              <Route path="sales" element={
-                <PrivateRoute requiredPermissions={['can_view_users']}>
-                  <Sales />
-                </PrivateRoute>
-              } />
-              <Route path="clients" element={
-                <PrivateRoute requiredPermissions={['can_view_users']}>
-                  <Clients />
-                </PrivateRoute>
-              } />
-              
-              <Route path="accrual" element={
-                <PrivateRoute>
-                  <div>Accrual Page</div>
-                </PrivateRoute>
-              } />
-              
-              <Route path="unauthorized" element={<Unauthorized />} />
-            </Route>
-          </Routes>
-        </LocalizationProvider>
-      </BrowserRouter>
-    </AuthProvider>
+    <ConfigProvider>
+      <AntApp>
+        <AuthProvider>
+          <BrowserRouter>
+            <LocalizationProvider dateAdapter={AdapterDateFns}>
+              <Routes>
+                <Route path="/login" element={<Login />} />
+                <Route
+                  path="/home"
+                  element={
+                    <ProtectedRoute>
+                      <Home />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route path="/" element={<Navigate to="/home" />} />
+                
+                <Route element={
+                  <PrivateRoute>
+                    <Layout />
+                  </PrivateRoute>
+                }>
+                  <Route index element={<Home />} />
+                  
+                  <Route path="bids" element={
+                    <PrivateRoute requiredPermissions={['can_view_bids']}>
+                      <BidList />
+                    </PrivateRoute>
+                  } />
+                  <Route path="bids/new" element={
+                    <PrivateRoute requiredPermissions={['can_view_bids', 'can_edit_bids']}>
+                      <BasicDetails />
+                    </PrivateRoute>
+                  } />
+                  <Route path="bids/edit/:bidId" element={
+                    <PrivateRoute requiredPermissions={['can_view_bids', 'can_edit_bids']}>
+                      <BasicDetails />
+                    </PrivateRoute>
+                  } />
+                  <Route path="bids/partner/:bidId" element={
+                    <PrivateRoute requiredPermissions={['can_view_bids']}>
+                      <PartnerResponse />
+                    </PrivateRoute>
+                  } />
+                  <Route path="bids/field-allocation/:bidId" element={
+                    <PrivateRoute requiredPermissions={['can_view_infield', 'can_edit_infield']}>
+                      <FieldAllocation />
+                    </PrivateRoute>
+                  } />
+                  
+                  <Route path="infield" element={
+                    <PrivateRoute requiredPermissions={['can_view_infield']}>
+                      <InField />
+                    </PrivateRoute>
+                  } />
+                  
+                  <Route path="closure" element={
+                    <PrivateRoute requiredPermissions={['can_view_closure']}>
+                      <Closure />
+                    </PrivateRoute>
+                  } />
+                  <Route path="closure/edit/:bidId" element={
+                    <PrivateRoute requiredPermissions={['can_view_closure', 'can_edit_closure']}>
+                      <ClosureEdit />
+                    </PrivateRoute>
+                  } />
+                  
+                  <Route path="invoice" element={
+                    <PrivateRoute requiredPermissions={['can_view_invoice']}>
+                      <ReadyForInvoiceBids />
+                    </PrivateRoute>
+                  } />
+                  <Route path="invoice/:bidId/edit" element={
+                    <PrivateRoute requiredPermissions={['can_view_invoice']}>
+                      <InvoiceEdit />
+                    </PrivateRoute>
+                  } />
+                  
+                  <Route path="users" element={
+                    <PrivateRoute requiredPermissions={['can_view_users']}>
+                      <Users />
+                    </PrivateRoute>
+                  } />
+                  <Route path="partners" element={
+                    <PrivateRoute requiredPermissions={['can_view_users']}>
+                      <Partners />
+                    </PrivateRoute>
+                  } />
+                  <Route path="vms" element={
+                    <PrivateRoute requiredPermissions={['can_view_users']}>
+                      <VMs />
+                    </PrivateRoute>
+                  } />
+                  <Route path="sales" element={
+                    <PrivateRoute requiredPermissions={['can_view_users']}>
+                      <Sales />
+                    </PrivateRoute>
+                  } />
+                  <Route path="clients" element={
+                    <PrivateRoute requiredPermissions={['can_view_users']}>
+                      <Clients />
+                    </PrivateRoute>
+                  } />
+                  
+                  <Route path="accrual" element={
+                    <PrivateRoute>
+                      <div>Accrual Page</div>
+                    </PrivateRoute>
+                  } />
+                  
+                  <Route path="unauthorized" element={<Unauthorized />} />
+                </Route>
+              </Routes>
+            </LocalizationProvider>
+          </BrowserRouter>
+        </AuthProvider>
+      </AntApp>
+    </ConfigProvider>
   );
 }
 

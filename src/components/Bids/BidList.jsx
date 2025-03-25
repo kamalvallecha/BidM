@@ -17,7 +17,7 @@ import { useNavigate } from 'react-router-dom';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
-import axios from 'axios';
+import axios from '../../api/axios';
 import './Bids.css';
 import PONumberDialog from './PONumberDialog';
 
@@ -36,7 +36,7 @@ function BidList() {
   const fetchBids = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('http://localhost:5000/api/bids');
+      const response = await axios.get('/api/bids');
       setBids(response.data);
     } catch (error) {
       console.error('Error fetching bids:', error);
@@ -61,7 +61,7 @@ function BidList() {
   const handleDelete = async (bidId) => {
     if (window.confirm('Are you sure you want to delete this bid?')) {
       try {
-        await axios.delete(`http://localhost:5000/api/bids/${bidId}`);
+        await axios.delete(`/api/bids/${bidId}`);
         fetchBids(); // Refresh the list
       } catch (error) {
         console.error('Error deleting bid:', error);
@@ -77,13 +77,13 @@ function BidList() {
   const handlePoSubmit = async (poNumber) => {
     try {
       // First save PO number
-      await axios.post(`http://localhost:5000/api/bids/${selectedBidId}/po`, {
+      await axios.post(`/api/bids/${selectedBidId}/po`, {
         status: 'infield',
         po_number: poNumber
       });
 
       // Then update status to infield using POST instead of PUT
-      await axios.post(`http://localhost:5000/api/bids/${selectedBidId}/status`, {
+      await axios.post(`/api/bids/${selectedBidId}/status`, {
         status: 'infield'
       });
 

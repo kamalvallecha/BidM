@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { 
   Paper, 
   FormControl, 
@@ -18,8 +18,7 @@ import {
   Tab,
   Box
 } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import axios from '../../api/axios';
 import './Bids.css';
 
 function PartnerResponse() {
@@ -40,106 +39,36 @@ function PartnerResponse() {
   const currentPartner = partners[selectedPartner];
 
   useEffect(() => {
-    const loadData = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
+        const [bidResponse, partnerResponse] = await Promise.all([
+          axios.get(`/api/bids/${bidId}`),
+          axios.get(`/api/bids/${bidId}/partner-responses`)
+        ]);
+
+        console.log('Bid Response:', bidResponse.data);
+        console.log('Partner Response:', partnerResponse.data);
+
+        setBidData(bidResponse.data);
+        setPartners(bidResponse.data.partners || []);
         
-        let formData;
+        // Initialize responses with existing data
+        const existingResponses = partnerResponse.data.responses || {};
+        setResponses(existingResponses);
+        setPartnerSettings(partnerResponse.data.settings || {});
         
-        // Check if this is a new bid or edit mode
-        if (bidId.startsWith('temp_')) {
-          // New bid - get data from session storage
-          formData = JSON.parse(sessionStorage.getItem('basicDetailsFormData'));
-          if (!formData) {
-            throw new Error('No bid data found');
-          }
-        } else {
-          // Edit mode - fetch from API
-          const bidResponse = await axios.get(`http://localhost:5000/api/bids/${bidId}`);
-          formData = bidResponse.data;
-        }
-
-        // Format the bid data
-        const formattedBidData = {
-          ...formData,
-          target_audiences: formData.target_audiences.map((ta, index) => ({
-            ...ta,
-            uniqueId: `audience-${index}`,
-            audience_name: ta.name
-          }))
-        };
-        setBidData(formattedBidData);
-
-        // Load partners
-        const partnersResponse = await axios.get('http://localhost:5000/api/partners');
-        const allPartners = partnersResponse.data;
-        
-        // Filter partners based on selected partners in form data
-        const selectedPartners = allPartners.filter(
-          partner => formData.partners.includes(partner.id)
-        );
-        setPartners(selectedPartners);
-
-        // Load responses based on mode
-        if (!bidId.startsWith('temp_')) {
-          // Edit mode - load existing responses
-          const responseData = await axios.get(`http://localhost:5000/api/bids/${bidId}/responses`);
-          setResponses(responseData.data.responses || {});
-          setPartnerSettings(responseData.data.settings || {});
-        } else {
-          // New bid - initialize empty responses
-          const initialResponses = {};
-          const initialSettings = {};
-          
-          selectedPartners.forEach(partner => {
-            // Initialize settings for each partner
-            initialSettings[partner.id] = {
-              currency: 'USD',
-              pmf: 0
-            };
-
-            formData.loi.forEach(loi => {
-              const key = `${partner.id}-${loi}`;
-              initialResponses[key] = {
-                partner_id: partner.id,
-                loi: loi,
-                status: 'draft',
-                currency: 'USD',
-                pmf: 0,
-                audiences: {}
-              };
-
-              // Initialize empty audience data
-              formData.target_audiences.forEach((audience, index) => {
-                initialResponses[key].audiences[`audience-${index}`] = {
-                  timeline: '',
-                  comments: '',
-                };
-
-                // Initialize empty country data
-                Object.keys(audience.country_samples || {}).forEach(country => {
-                  initialResponses[key].audiences[`audience-${index}`][country] = {
-                    commitment: '',
-                    cpi: ''
-                  };
-                });
-              });
-            });
-          });
-
-          setResponses(initialResponses);
-          setPartnerSettings(initialSettings);
-        }
-
+        // Mark responses as initialized to prevent overwriting
+        setResponsesInitialized(true);
       } catch (error) {
-        console.error('Error loading data:', error);
+        console.error('Error fetching data:', error);
         setError(error.message);
       } finally {
         setLoading(false);
       }
     };
 
-    loadData();
+    fetchData();
   }, [bidId]);
 
   useEffect(() => {
@@ -216,79 +145,45 @@ function PartnerResponse() {
 
             // Initialize audience data for each LOI
             bidData.target_audiences.forEach(audience => {
-              initialResponses[key].audiences[audience.uniqueId] = {
-                timeline: 0,
-                comments: '',
-              };
-
-              // Initialize country data for each audience
-              Object.entries(audience.country_samples || {}).forEach(([country, sample]) => {
-                initialResponses[key].audiences[audience.uniqueId][country] = {
-                  commitment: sample,
-                  cpi: 0
+              if (!initialResponses[key].audiences[audience.uniqueId]) {
+                initialResponses[key].audiences[audience.uniqueId] = {
+                  timeline: 0,
+                  comments: '',
                 };
-              });
+
+                // Initialize country data for each audience
+                Object.entries(audience.country_samples || {}).forEach(([country, sample]) => {
+                  if (!initialResponses[key].audiences[audience.uniqueId][country]) {
+                    initialResponses[key].audiences[audience.uniqueId][country] = {
+                      commitment: 0,
+                      cpi: 0
+                    };
+                  }
+                });
+              }
             });
           }
         });
       });
 
       setResponses(initialResponses);
-      sessionStorage.setItem('partnerResponsesData', JSON.stringify(initialResponses));
       setResponsesInitialized(true);
     }
-  }, [bidData, partners, responsesInitialized]);
+  }, [bidData, partners, responsesInitialized, responses, partnerSettings]);
 
   const handlePartnerChange = (event, newValue) => {
     setSelectedPartner(newValue);
   };
 
-  const handleSave = async (partner, currentLoi) => {
+  const handleSave = async () => {
     try {
-      // Save current LOI data
-      const key = `${partner.id}-${currentLoi}`;
-      setSavingStatus(prev => ({
-        ...prev,
-        [key]: 'saving'
-      }));
-
-      // Get current values for this partner-LOI combination
-      const currentValues = responses[key] || {};
-
-      // Create updated response with current values
-      const updatedResponse = {
-        ...currentValues,
-        partner_id: partner.id,
-        loi: currentLoi,
-        status: 'saved',
-        currency: partnerSettings[partner.id]?.currency || 'USD',
-        pmf: partnerSettings[partner.id]?.pmf || 0,
-        audiences: currentValues.audiences || {}
-      };
-
-      // Update responses state
-      setResponses(prev => ({
-        ...prev,
-        [key]: updatedResponse
-      }));
-
-      // Save to session storage
-      sessionStorage.setItem('partnerResponsesData', JSON.stringify({
-        ...responses,
-        [key]: updatedResponse
-      }));
-
-      setSavingStatus(prev => ({
-        ...prev,
-        [key]: 'saved'
-      }));
-
+      await axios.put(`/api/bids/${bidId}/partner-responses`, {
+        responses: responses
+      });
+      alert('Partner responses saved successfully');
     } catch (error) {
-      console.error('Error saving response:', error);
-      setSavingStatus(prev => ({
-        ...prev,
-        [key]: 'error'
-      }));
+      console.error('Error saving partner responses:', error);
+      alert('Failed to save partner responses');
     }
   };
 
@@ -461,7 +356,7 @@ function PartnerResponse() {
                 scrollButtons="auto"
                 className="partner-tabs"
               >
-                {partners.map((partner) => (
+                {partners.map((partner, index) => (
                   <Tab key={partner.id} label={partner.partner_name} />
                 ))}
               </Tabs>
@@ -495,9 +390,9 @@ function PartnerResponse() {
                   </div>
 
                   {bidData.target_audiences.map((audience, audienceIndex) => (
-                    <div key={audienceIndex} className="audience-section">
+                    <div key={audience.uniqueId} className="audience-section">
                       <Typography variant="subtitle1" className="audience-title">
-                        {audience.audience_name} Details
+                        {audience.name} Details
                       </Typography>
                       <Typography variant="subtitle2" className="audience-category">
                         {audience.ta_category}
@@ -515,7 +410,7 @@ function PartnerResponse() {
                           </TableHead>
                           <TableBody>
                             {Object.entries(audience.country_samples || {}).map(([country, sample], idx) => (
-                              <TableRow key={idx}>
+                              <TableRow key={`${audience.uniqueId}-${country}`}>
                                 <TableCell>{country}</TableCell>
                                 <TableCell align="right">{sample}</TableCell>
                                 <TableCell align="right">
@@ -584,8 +479,7 @@ function PartnerResponse() {
 
                       <TextField
                         fullWidth
-                        multiline
-                        rows={2}
+                        type="number"
                         label="Bid Timeline (days)"
                         className="timeline-field"
                         value={responses[`${currentPartner.id}-${selectedLOI}`]?.audiences?.[audience.uniqueId]?.timeline || ''}
@@ -635,7 +529,7 @@ function PartnerResponse() {
             <Button onClick={handleBack}>BACK</Button>
             {currentPartner && (
               <Button 
-                onClick={() => handleSave(currentPartner, selectedLOI)}
+                onClick={() => handleSave()}
                 disabled={!selectedLOI}
                 color={savingStatus[`${currentPartner.id}-${selectedLOI}`] === 'error' ? 'error' : 'primary'}
                 variant={savingStatus[`${currentPartner.id}-${selectedLOI}`] === 'saved' ? 'outlined' : 'contained'}

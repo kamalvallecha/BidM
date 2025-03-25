@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Table, Button, Modal, Input, Form, Select, message } from 'antd';
+import axios from '../../api/axios';
 import './VMs.css';
 
 const { Option } = Select;
@@ -16,9 +17,8 @@ const VMs = () => {
 
     const fetchVMs = async () => {
         try {
-            const response = await fetch('http://localhost:5000/api/vms');
-            const data = await response.json();
-            setVMs(data);
+            const response = await axios.get('/api/vms');
+            setVMs(response.data);
         } catch (error) {
             console.error('Error fetching VMs:', error);
             message.error('Failed to fetch VMs');
@@ -27,19 +27,8 @@ const VMs = () => {
 
     const handleSubmit = async (values) => {
         try {
-            const response = await fetch('http://localhost:5000/api/vms', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(values)
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to create VM');
-            }
-
-            await fetchVMs();
+            await axios.post('/api/vms', values);
+            fetchVMs();
             setIsModalVisible(false);
             form.resetFields();
             message.success('VM created successfully');
@@ -51,15 +40,8 @@ const VMs = () => {
 
     const handleDelete = async (id) => {
         try {
-            const response = await fetch(`http://localhost:5000/api/vms/${id}`, {
-                method: 'DELETE'
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to delete VM');
-            }
-
-            await fetchVMs();
+            await axios.delete(`/api/vms/${id}`);
+            fetchVMs();
             message.success('VM deleted successfully');
         } catch (error) {
             console.error('Error deleting VM:', error);
@@ -209,9 +191,11 @@ const VMs = () => {
                         rules={[{ required: true, message: 'Please select team' }]}
                     >
                         <Select>
-                            <Option value="sales">Sales</Option>
-                            <Option value="marketing">Marketing</Option>
-                            <Option value="engineering">Engineering</Option>
+                            <Option value="pod1">POD 1</Option>
+                            <Option value="pod2">POD 2</Option>
+                            <Option value="pod3">POD 3</Option>
+                            <Option value="pod4">POD 4</Option>
+                            <Option value="operations">Operations</Option>
                         </Select>
                     </Form.Item>
 

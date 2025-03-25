@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Table, Button, Modal, Input, Form, Select, message } from 'antd';
+import axios from '../../api/axios';
 import './Sales.css';
 
 const { Option } = Select;
@@ -16,9 +17,8 @@ const Sales = () => {
 
     const fetchSales = async () => {
         try {
-            const response = await fetch('http://localhost:5000/api/sales');
-            const data = await response.json();
-            setSales(data);
+            const response = await axios.get('/api/sales');
+            setSales(response.data);
         } catch (error) {
             console.error('Error fetching sales:', error);
             message.error('Failed to fetch sales');
@@ -27,19 +27,8 @@ const Sales = () => {
 
     const handleSubmit = async (values) => {
         try {
-            const response = await fetch('http://localhost:5000/api/sales', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(values)
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to create sales record');
-            }
-
-            await fetchSales();
+            await axios.post('/api/sales', values);
+            fetchSales();
             setIsModalVisible(false);
             form.resetFields();
             message.success('Sales record created successfully');
@@ -51,15 +40,8 @@ const Sales = () => {
 
     const handleDelete = async (id) => {
         try {
-            const response = await fetch(`http://localhost:5000/api/sales/${id}`, {
-                method: 'DELETE'
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to delete sales record');
-            }
-
-            await fetchSales();
+            await axios.delete(`/api/sales/${id}`);
+            fetchSales();
             message.success('Sales record deleted successfully');
         } catch (error) {
             console.error('Error deleting sales:', error);
