@@ -17,9 +17,9 @@ from constants import ROLES_AND_PERMISSIONS  # Add this import
 app = Flask(__name__)
 CORS(app, resources={
     r"/api/*": {
-        "origins": ["http://localhost:5173"],  # Update this to match your frontend port
-        "methods": ["GET", "POST", "PUT", "DELETE"],
-        "allow_headers": ["Content-Type"],
+        "origins": ["https://bidm-smartprocure.replit.app", "http://localhost:5173"],  # Update this to match your frontend port
+        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization"],
         "supports_credentials": True  # Add this line
     }
 })
@@ -3234,7 +3234,7 @@ def get_partner_responses(bid_id):
         
         audience_mapping = {}
         for row in cur.fetchall():
-            audience_mapping[row['id']] = f"audience-{row['id']}"
+            audience_mapping[f"audience-{row['id']}"] = row['id']
 
         # Get all partner responses with audience data
         cur.execute("""
