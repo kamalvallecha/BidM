@@ -1,11 +1,13 @@
-{ pkgs }: {
-    deps = [
-        pkgs.nodejs-18_x
-        pkgs.nodePackages.typescript-language-server
-        pkgs.yarn
-        pkgs.replitPackages.jest
-        pkgs.python39
-        pkgs.python39Packages.pip
-        pkgs.postgresql
-    ];
-} 
+{
+  description = "BidM Application";
+  deps = [
+    "python3"
+    "nodejs"
+    "postgresql"
+    "yarn"
+  ];
+  env = {
+    PYTHONPATH = "${REPL_HOME}/backend:${PYTHONPATH}";
+    LD_LIBRARY_PATH = "${REPL_HOME}/backend:${LD_LIBRARY_PATH}";
+  };
+}
