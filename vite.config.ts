@@ -13,11 +13,12 @@ export default defineConfig({
     port: 3000,
     proxy: {
       '/api': {
-        target: import.meta.env.VITE_PROD
-          ? 'https://bidm-smartprocure.replit.app'
+        target: process.env.REPL_SLUG 
+          ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`
           : 'http://localhost:5000',
         changeOrigin: true,
         secure: false,
+        rewrite: (path) => path.replace(/^\/api/, ''),
       },
     },
   },

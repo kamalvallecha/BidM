@@ -1,6 +1,6 @@
-run = "npm run dev"
+run = "npm install && python -m pip install -r requirements.txt && npm run dev & python backend/main.py"
 hidden = [".config", "package-lock.json", "venv"]
-modules = ["python-3.12", "cpp-clang14", "nodejs-20", "c-clang14"]
+modules = ["python-3.12:v25-20230920-d204a8a", "nodejs-20:v8-20230920-bd784b9"]
 
 [nix]
 channel = "stable-24_05"
@@ -10,4 +10,13 @@ run = ["sh", "-c", "npm run dev"]
 deploymentTarget = "cloudrun"
 
 [env]
-PYTHONPATH = "${PYTHONPATH}:${REPL_HOME}/backend" 
+PYTHONPATH = "${PYTHONPATH}:${REPL_HOME}/backend"
+
+[languages]
+[languages.python]
+pattern = "**/*.py"
+syntax = "python"
+
+[languages.javascript]
+pattern = "**/*.{js,jsx,ts,tsx}"
+syntax = "javascript"
