@@ -1,12 +1,12 @@
-run = ["sh", "-c", "npm run dev & python backend/main.py"]
+run = "npm run dev"
 hidden = [".config", "package-lock.json", "venv"]
-modules = ["python-3.10:v18-20230807-322e88b", "nodejs-18:v3-20230608-f4cd419"]
+modules = ["python-3.12", "cpp-clang14", "nodejs-20", "c-clang14"]
 
 [nix]
-channel = "stable-22_11"
+channel = "stable-24_05"
 
 [deployment]
-run = ["sh", "-c", "npm run build && python backend/main.py"]
+run = ["sh", "-c", "npm run dev"]
 deploymentTarget = "cloudrun"
 
 [env]
