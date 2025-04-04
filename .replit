@@ -1,0 +1,13 @@
+run = ["sh", "-c", "npm run dev & python backend/main.py"]
+hidden = [".config", "package-lock.json", "venv"]
+modules = ["python-3.10:v18-20230807-322e88b", "nodejs-18:v3-20230608-f4cd419"]
+
+[nix]
+channel = "stable-22_11"
+
+[deployment]
+run = ["sh", "-c", "npm run build && python backend/main.py"]
+deploymentTarget = "cloudrun"
+
+[env]
+PYTHONPATH = "${PYTHONPATH}:${REPL_HOME}/backend" 
