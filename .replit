@@ -1,0 +1,118 @@
+modules = ["nodejs-20", "python-3.12", "web", "postgresql-16"]
+run = "npm run dev"
+
+[nix]
+channel = "stable-24_05"
+packages = ["glibcLocales", "libxcrypt"]
+
+[deployment]
+run = ["sh", "-c", "cd backend && python main.py"]
+build = ["sh", "-c", "npm run build && cd backend && pip install -r requirements.txt"]
+
+[workflows]
+runButton = "Backend Only"
+
+[[workflows.workflow]]
+name = "Frontend Dev"
+author = 38348679
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd ."
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm install"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm run dev"
+
+[[workflows.workflow]]
+name = "Backend Dev"
+author = 38348679
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd backend"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pip install -r requirements.txt"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python main.py"
+
+[[workflows.workflow]]
+name = "Full Stack"
+author = 38348679
+mode = "parallel"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd backend && pip install -r requirements.txt && python main.py"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm install && npm run dev"
+
+[[workflows.workflow]]
+name = "Backend Only"
+author = 38348679
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd backend"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python -m pip install --upgrade pip"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pip install -r requirements.txt"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python main.py"
+
+[[workflows.workflow]]
+name = "Full Stack Dev"
+author = 38348679
+mode = "parallel"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd backend && pip install -r requirements.txt && python main.py"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm install && npm run dev"
+
+[[ports]]
+localPort = 3000
+externalPort = 80
+
+[[ports]]
+localPort = 3001
+externalPort = 3001
+
+[[ports]]
+localPort = 3002
+externalPort = 3002
+
+[[ports]]
+localPort = 5000
+externalPort = 5000
+
+[[ports]]
+localPort = 5001
+externalPort = 3000
+
+[[ports]]
+localPort = 5002
+externalPort = 4200
